@@ -12,7 +12,12 @@ env:
 jobs:
   tests:
     name: Run integration tests
-    runs-on: ubuntu-latest
+    strategy:
+      fauk-fast: false
+      matrix:
+        os: [ ubuntu-latest , windows-latest ]
+    runs-on: ${{ matrix.os }}
+
     steps:
       - name: Checkout Branch
         uses: actions/checkout@v2
@@ -26,7 +31,7 @@ jobs:
       - name: Download OpenSearch Security Plugin
         run: wget --progress=bar:force:noscroll -O opensearch-security.zip https://ci.opensearch.org/ci/dbc/distribution-build-opensearch/${{ env.OPENSEARCH_VERSION }}/latest/linux/x64/tar/builds/opensearch/plugins/${{ env.PLUGIN_NAME }}-${{ env.PLUGIN_VERSION }}.zip
       
-      - name: Create Setup Script
+      - name: Create Setup Script for Linux
         if: ${{ runner.os == 'Linux' }}
         run: |
           cat > setup.sh <<'EOF'
@@ -34,6 +39,13 @@ jobs:
           /bin/bash -c "yes | ./opensearch-${{ env.OPENSEARCH_VERSION }}-SNAPSHOT/plugins/${{ env.PLUGIN_NAME }}/tools/install_demo_configuration.sh"
           echo "plugins.security.unsupported.restapi.allow_securityconfig_modification: true" >> ./opensearch-${{ env.OPENSEARCH_VERSION }}-SNAPSHOT/config/opensearch.yml
           EOF
+
+      - name: Create Setup Script for Windows
+        if: ${{ runner.os == 'Windows' }}
+        run: |
+          New-Item .\setup.bat -type file
+          Set-Content .\setup.bat -Value "powershell.exe -noexit -command `"echo 'y' | .\opensearch-${{ env.OPENSEARCH_VERSION }}-SNAPSHOT\plugins\${{ env.PLUGIN_NAME }}\tools\install_demo_configuration.bat`""
+          Get-Content .\setup.bat
 
       - name: Run Opensearch with A Single Plugin
         uses: opensearch-project/security/.github/actions/start-opensearch-with-one-plugin@main
