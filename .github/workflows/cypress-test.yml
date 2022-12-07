@@ -15,22 +15,48 @@ env:
 
 jobs:
   tests:
-    name: Run Cypress tests
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, windows-latest ]
+        jdk: [ 11, 17 ]
+    runs-on: ${{ matrix.os }}
+
+    name: Run Cypress Tests
     steps:
       - name: Checkout Branch
         uses: actions/checkout@v2
-      
-      - name: Download OpenSearch Security Plugin
-        run: wget --progress=bar:force:noscroll -O opensearch-security.zip https://ci.opensearch.org/ci/dbc/distribution-build-opensearch/${{ env.OPENSEARCH_VERSION }}/latest/linux/x64/tar/builds/opensearch/plugins/${{ env.PLUGIN_NAME }}-${{ env.PLUGIN_VERSION }}.zip
-      
+
+      # Download OpenSearch Security Plugin
+      - name: Download OpenSearch Security for Windows
+        uses: peternied/download-file@v2
+        if: ${{ runner.os == 'Windows' }}
+        with:
+          url: https://ci.opensearch.org/ci/dbc/distribution-build-opensearch/${{ env.OPENSEARCH_VERSION }}/latest/windows/x64/tar/builds/opensearch/plugins/${{ env.PLUGIN_NAME }}-${{ env.PLUGIN_VERSION }}.zip
+
+      - name: Download OpenSearch Security for Linux
+        uses: peternied/download-file@v2
+        if: ${{ runner.os == 'Linux' }}
+        with:
+          url: https://ci.opensearch.org/ci/dbc/distribution-build-opensearch/${{ env.OPENSEARCH_VERSION }}/latest/linux/x64/tar/builds/opensearch/plugins/${{ env.PLUGIN_NAME }}-${{ env.PLUGIN_VERSION }}.zip
+
+      - name: Rename OpenSearch Security Plugin
+        run:  mv {{ env.PLUGIN_NAME }}-${{ env.PLUGIN_VERSION }}.zip opensearch-security.zip
+
       - name: Create Setup Script
         if: ${{ runner.os == 'Linux' }}
         run: |
           cat > setup.sh <<'EOF'
           chmod +x  ./opensearch-${{ env.OPENSEARCH_VERSION }}-SNAPSHOT/plugins/${{ env.PLUGIN_NAME }}/tools/install_demo_configuration.sh 
-          /bin/bash -c "yes | ./opensearch-${{ env.OPENSEARCH_VERSION }}-SNAPSHOT/plugins/${{ env.PLUGIN_NAME }}/tools/install_demo_configuration.sh"
+          /bin/bash -c "./opensearch-${{ env.OPENSEARCH_VERSION }}-SNAPSHOT/plugins/${{ env.PLUGIN_NAME }}/tools/install_demo_configuration.sh -y"
           EOF
+
+      - name: Create Setup Script
+        if: ${{ runner.os == 'Windows' }}
+        run: |
+          New-Item .\setup.bat -type file
+          Set-Content .\setup.bat -Value "powershell.exe .\opensearch-${{ env.OPENSEARCH_VERSION }}-SNAPSHOT\plugins\${{ env.PLUGIN_NAME }}\tools\install_demo_configuration.bat -y"
+          Get-Content .\setup.bat
 
       - name: Run Opensearch with A Single Plugin
         uses: opensearch-project/security/.github/actions/start-opensearch-with-one-plugin@main
@@ -44,8 +70,9 @@ jobs:
         with:
           plugin_name: security-dashboards-plugin
 
-      - name: Configure and Run OpenSearch Dashboards
+      - name: Configure and Run OpenSearch Dashboards on Linux
         continue-on-error: false
+        if: ${{ runner.os == 'Linux' }}
         run: |
           cd ./OpenSearch-Dashboards
           echo 'server.host: "0.0.0.0"' >> ./config/opensearch_dashboards.yml
@@ -62,6 +89,25 @@ jobs:
           yarn start --no-base-path --no-watch &
           sleep 300
 
+      - name: Configure and Run OpenSearch Dashboards on Windows
+        continue-on-error: false
+        if: ${{ runner.os == 'Windows' }}
+        run: |
+          cd .\OpenSearch-Dashboards
+          Add-Content .\config\opensearch_dashboards.yml "server.host: `"0.0.0.0`""
+          Add-Content .\config\opensearch_dashboards.yml "opensearch.hosts: [`"https://localhost:9200`"]"
+          Add-Content .\config\opensearch_dashboards.yml "opensearch.ssl.verificationMode: none"
+          Add-Content .\config\opensearch_dashboards.yml "opensearch.username: `"kibanaserver`""
+          Add-Content .\config\opensearch_dashboards.yml "opensearch.password: `"kibanaserver`""
+          Add-Content .\config\opensearch_dashboards.yml "opensearch.requestHeadersWhitelist: [ authorization,securitytenant ]"
+          Add-Content .\config\opensearch_dashboards.yml "opensearch_security.multitenancy.enabled: true"
+          Add-Content .\config\opensearch_dashboards.yml "opensearch_security.multitenancy.tenants.preferred: [`"Private`", `"Global`"]"
+          Add-Content .\config\opensearch_dashboards.yml "opensearch_security.readonly_mode.roles: [`"kibana_read_only`"]"
+          Add-Content .\config\opensearch_dashboards.yml "opensearch_security.cookie.secure: false"
+          Add-Content .\config\opensearch_dashboards.yml "opensearch_security.multitenancy.enable_aggregation_view: true"
+          yarn start --no-base-path --no-watch &
+          sleep 300
+
       - name: Checkout
         uses: actions/checkout@v2
         with:
@@ -69,11 +115,17 @@ jobs:
           repository: opensearch-project/opensearch-dashboards-functional-test
           ref: 'main'
 
-      - name: Get Cypress version
+      - name: Get Cypress version Linux
+        if: ${{ runner.os == 'Linux' }}
         id: cypress_version
-        run: |
-          echo "::set-output name=cypress_version::$(cat ./${{ env.FTR_PATH }}/package.json | jq '.devDependencies.cypress' | tr -d '"')"
-      
+        run: echo "::set-output name=cypress_version::$(cat ./${{ env.FTR_PATH }}/package.json | jq '.devDependencies.cypress' | tr -d '"')"
+
+      - name: Get Cypress version Windows
+        if: ${{ runner.os == 'Windows' }}
+        id: cypress_version
+        run: echo "::set-output name=cypress_version::$(cat ./${{ env.FTR_PATH }}/package.json | jq '.devDependencies.cypress' | tr -d '"')"
+
+
       - name: Run tests
         uses: cypress-io/github-action@v2
         with:
