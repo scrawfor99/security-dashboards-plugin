@@ -43,9 +43,9 @@ jobs:
       - name: Rename OpenSearch Security Plugin
         run: |
           echo in $(pwd) 
-          echo trying to rename {{ env.PLUGIN_NAME }}-${{ env.PLUGIN_VERSION }}.zip
+          echo trying to rename ${{ env.PLUGIN_NAME }}-${{ env.PLUGIN_VERSION }}.zip
           ls
-          mv {{ env.PLUGIN_NAME }}-${{ env.PLUGIN_VERSION }}.zip {{ env.PLUGIN_NAME }}.zip
+          mv ${{ env.PLUGIN_NAME }}-${{ env.PLUGIN_VERSION }}.zip ${{ env.PLUGIN_NAME }}.zip
 
       - name: Create Setup Script
         if: ${{ runner.os == 'Linux' }}
