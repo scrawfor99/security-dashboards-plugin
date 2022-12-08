@@ -13,7 +13,7 @@ outputs:
 
   plugin-directory:
     description: "The directory where the plugin has been configured"
-    value: ${{ steps.determine-plugin-directory.outputs.plugin-directory }}
+    value: ${{ steps.determine-plugin-directory-windows.outputs.plugin-directory }}
 
 runs:
   using: "composite"
@@ -23,20 +23,9 @@ runs:
       run: echo "dashboards-directory=OpenSearch-Dashboards"  >> $GITHUB_OUTPUT
       shell: bash
 
-    - id: determine-dashboards-directory
-      if: ${{ runner.os == 'Windows' }}
-      run: echo "dashboards-directory=OpenSearch-Dashboards"  >> $GITHUB_OUTPUT
-      shell: pwsh
-
     - id: determine-plugin-directory
-      if: ${{ runner.os == 'Linux' }}
       run: echo "::set-output name=plugin-directory::./OpenSearch-Dashboards/plugins/${{ inputs.plugin_name }}"
       shell: bash
-
-    - id: determine-plugin-directory
-      if: ${{ runner.os == 'Windows' }}
-      run: echo "::set-output name=plugin-directory::./OpenSearch-Dashboards/plugins/${{ inputs.plugin_name }}"
-      shell: pwsh
 
     - uses: actions/checkout@v2
       with:
