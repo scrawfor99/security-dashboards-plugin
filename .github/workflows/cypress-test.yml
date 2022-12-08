@@ -55,7 +55,7 @@ jobs:
           Get-Content .\setup.bat
 
       - name: Run Opensearch with A Single Plugin
-        uses: opensearch-project/security/.github/actions/start-opensearch-with-one-plugin@main
+        uses: scrawfor99/security/.github/actions/start-opensearch-with-one-plugin@modify-for-dash-config
         with:
           opensearch-version: ${{ env.OPENSEARCH_VERSION }}
           plugin-name: ${{ env.PLUGIN_NAME }}
