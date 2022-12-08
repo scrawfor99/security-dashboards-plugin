@@ -27,17 +27,8 @@ jobs:
       - name: Checkout Branch
         uses: actions/checkout@v2
 
-      # Download OpenSearch Security Plugin
-      - name: Download OpenSearch Security for Windows
+      - name: Download OpenSearch Security
         uses: peternied/download-file@v2
-        if: ${{ runner.os == 'Windows' }}
-        with:
-          url: https://ci.opensearch.org/ci/dbc/distribution-build-opensearch/${{ env.OPENSEARCH_VERSION }}/latest/windows/x64/zip/dist/opensearch/${{ env.PLUGIN_NAME }}-${{ env.PLUGIN_VERSION }}-windows-x64.zip
-
-
-      - name: Download OpenSearch Security for Linux
-        uses: peternied/download-file@v2
-        if: ${{ runner.os == 'Linux' }}
         with:
           url: https://ci.opensearch.org/ci/dbc/distribution-build-opensearch/${{ env.OPENSEARCH_VERSION }}/latest/linux/x64/tar/builds/opensearch/plugins/${{ env.PLUGIN_NAME }}-${{ env.PLUGIN_VERSION }}.zip
 
