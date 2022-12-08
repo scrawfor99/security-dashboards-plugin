@@ -44,7 +44,7 @@ jobs:
         run: |
           echo in $(pwd)
           ls
-          mv {{ env.PLUGIN_NAME }}-${{ env.PLUGIN_VERSION }}.zip opensearch-security.zip
+          mv {{ env.PLUGIN_NAME }}-${{ env.PLUGIN_VERSION }}.zip ./opensearch-security.zip
 
       - name: Create Setup Script
         if: ${{ runner.os == 'Linux' }}
