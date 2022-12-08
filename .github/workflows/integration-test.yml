@@ -1,6 +1,6 @@
 name: Integration Tests
 
-on: [push, pull_request]
+on: [] #push, pull_request
 
 env:
   TEST_BROWSER_HEADLESS: 1
