@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, windows-latest ]
+        os: [ubuntu-latest, windows-latest ]
         jdk: [11]
     runs-on: ${{ matrix.os }}
 
@@ -33,11 +33,7 @@ jobs:
           url: https://ci.opensearch.org/ci/dbc/distribution-build-opensearch/${{ env.OPENSEARCH_VERSION }}/latest/linux/x64/tar/builds/opensearch/plugins/${{ env.PLUGIN_NAME }}-${{ env.PLUGIN_VERSION }}.zip
 
       - name: Rename OpenSearch Security Plugin
-        run: |
-          echo in $(pwd) 
-          echo trying to rename ${{ env.PLUGIN_NAME }}-${{ env.PLUGIN_VERSION }}.zip
-          ls
-          mv ${{ env.PLUGIN_NAME }}-${{ env.PLUGIN_VERSION }}.zip ${{ env.PLUGIN_NAME }}.zip
+        run: mv ${{ env.PLUGIN_NAME }}-${{ env.PLUGIN_VERSION }}.zip ${{ env.PLUGIN_NAME }}.zip
 
       - name: Create Setup Script
         if: ${{ runner.os == 'Linux' }}
