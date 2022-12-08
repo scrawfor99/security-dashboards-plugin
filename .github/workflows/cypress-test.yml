@@ -42,13 +42,7 @@ jobs:
 
       - name: Rename OpenSearch Security Plugin
         run: |
-          echo in base dir
-          ls
-          cd ${{ env.PLUGIN_NAME }}-*
           echo in $(pwd)
-          ls
-          cd ../..
-          echo back in base dir
           ls
           mv {{ env.PLUGIN_NAME }}-${{ env.PLUGIN_VERSION }}.zip opensearch-security.zip
 
