@@ -115,16 +115,9 @@ jobs:
           repository: opensearch-project/opensearch-dashboards-functional-test
           ref: 'main'
 
-      - name: Get Cypress version Linux
-        if: ${{ runner.os == 'Linux' }}
+      - name: Get Cypress version
         id: cypress_version
         run: echo "::set-output name=cypress_version::$(cat ./${{ env.FTR_PATH }}/package.json | jq '.devDependencies.cypress' | tr -d '"')"
-
-      - name: Get Cypress version Windows
-        if: ${{ runner.os == 'Windows' }}
-        id: cypress_version
-        run: echo "::set-output name=cypress_version::$(cat ./${{ env.FTR_PATH }}/package.json | jq '.devDependencies.cypress' | tr -d '"')"
-
 
       - name: Run tests
         uses: cypress-io/github-action@v2
