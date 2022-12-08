@@ -41,10 +41,7 @@ jobs:
           url: https://ci.opensearch.org/ci/dbc/distribution-build-opensearch/${{ env.OPENSEARCH_VERSION }}/latest/linux/x64/tar/builds/opensearch/plugins/${{ env.PLUGIN_NAME }}-${{ env.PLUGIN_VERSION }}.zip
 
       - name: Rename OpenSearch Security Plugin
-        run: |
-          echo in $(pwd)
-          ls
-          mv "{{ env.PLUGIN_NAME }}-${{ env.PLUGIN_VERSION }}.zip" ./opensearch-security.zip
+        run: mv {{ env.PLUGIN_NAME }}-${{ env.PLUGIN_VERSION }}.zip $(pwd)/opensearch-security.zip
 
       - name: Create Setup Script
         if: ${{ runner.os == 'Linux' }}
