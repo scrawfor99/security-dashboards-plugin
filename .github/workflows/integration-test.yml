@@ -35,7 +35,7 @@ jobs:
           browser: firefox
           version: latest
 
-      # Must be set for Windows because of JNI on runner
+      # Must be set for Windows because of JNI on runner is old
       - name: Set up JDK
         uses: actions/setup-java@v1
         with:
