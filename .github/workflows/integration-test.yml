@@ -34,13 +34,13 @@ jobs:
           browser: firefox
           version: latest
 
-      - name: Download OpenSearch Security
-        uses: peternied/download-file@v2
-        with:
-          url:  https://ci.opensearch.org/ci/dbc/distribution-build-opensearch/${{ env.OPENSEARCH_VERSION }}/latest/linux/x64/tar/builds/opensearch/plugins/${{ env.PLUGIN_NAME }}-${{ env.PLUGIN_VERSION }}.zip
+      - name: Download OpenSearch Security Plugin Build for Linux
+        if:  ${{ runner.os == 'Linux' }}
+        run: wget --progress=bar:force:noscroll -O opensearch-security.zip https://ci.opensearch.org/ci/dbc/distribution-build-opensearch/${{ env.OPENSEARCH_VERSION }}/latest/linux/x64/tar/builds/opensearch/plugins/${{ env.PLUGIN_NAME }}-${{ env.PLUGIN_VERSION }}.zip
 
-      - name: Rename Security Plugin
-        run: mv ${{ env.PLUGIN_NAME }}-${{ env.PLUGIN_VERSION }}.zip opensearch-security.zip
+      - name: Download OpenSearch Security Plugin Build for Linux
+        if:  ${{ runner.os == 'Windows' }}
+        run: Invoke-WebRequest -URI https://ci.opensearch.org/ci/dbc/distribution-build-opensearch/${{ env.OPENSEARCH_VERSION }}/latest/linux/x64/tar/builds/opensearch/plugins/${{ env.PLUGIN_NAME }}-${{ env.PLUGIN_VERSION }}.zip -Outfile opensearch-security.zip
 
       - name: Create Setup Script for Linux
         if: ${{ runner.os == 'Linux' }}
