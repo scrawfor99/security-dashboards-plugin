@@ -9,95 +9,68 @@ env:
   START_CMD: 'node ../scripts/opensearch_dashboards --dev --no-base-path --no-watch --opensearch_security.multitenancy.enable_aggregation_view=true'
   OPENSEARCH_SNAPSHOT_CMD: 'node ../scripts/opensearch snapshot'
   SPEC: 'cypress/integration/plugins/security-dashboards-plugin/aggregation_view.js,'
+  OPENSEARCH_VERSION: 2.5.0
+  PLUGIN_NAME: opensearch-security
+  PLUGIN_VERSION: 2.5.0.0
 
 jobs:
   tests:
-    name: Run aggregation view cypress test
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest ]
+        jdk: [11]
+    runs-on: ${{ matrix.os }}
+
+    name: Run Cypress Tests
     steps:
-      - name: Download OpenSearch Core
-        run: |
-          wget https://ci.opensearch.org/ci/dbc/distribution-build-opensearch/2.5.0/latest/linux/x64/tar/builds/opensearch/dist/opensearch-min-2.5.0-linux-x64.tar.gz
-          tar -xzf opensearch-*.tar.gz
-          rm -f opensearch-*.tar.gz
-          
-      - name: Download OpenSearch Security Plugin
-        run: wget -O opensearch-security.zip https://ci.opensearch.org/ci/dbc/distribution-build-opensearch/2.5.0/latest/linux/x64/tar/builds/opensearch/plugins/opensearch-security-2.5.0.0.zip
-        
-
-      - name: Run OpenSearch with plugin
-        run: |
-          cat > os-ep.sh <<EOF
-          yes | opensearch-plugin install file:///docker-host/security-plugin.zip
-          chmod +x plugins/opensearch-security/tools/install_demo_configuration.sh
-          yes | plugins/opensearch-security/tools/install_demo_configuration.sh
-          echo "plugins.security.unsupported.restapi.allow_securityconfig_modification: true" >> /opensearch/config/opensearch.yml
-          chown 1001:1001 -R /opensearch
-          su -c "/opensearch/bin/opensearch" -s /bin/bash opensearch
-          EOF
-          docker build -t opensearch-test:latest -f- . <<EOF
-          FROM ubuntu:latest
-          COPY --chown=1001:1001 os-ep.sh /docker-host/
-          COPY --chown=1001:1001 opensearch-security.zip /docker-host/security-plugin.zip
-          COPY --chown=1001:1001 opensearch* /opensearch/
-          RUN chmod +x /docker-host/os-ep.sh
-          RUN useradd -u 1001 -s /sbin/nologin opensearch
-          ENV PATH="/opensearch/bin:${PATH}"
-          WORKDIR /opensearch/
-          ENTRYPOINT /docker-host/os-ep.sh
-          EOF
-          docker run -d -p 9200:9200 -p 9600:9600 -i opensearch-test:latest
-
-      - name: Checkout OpenSearch Dashboard
+      - name: Checkout Branch
         uses: actions/checkout@v2
-        with:
-          path: OpenSearch-Dashboards
-          repository: opensearch-project/OpenSearch-Dashboards
-          ref: '2.x'
-          fetch-depth: 0
-      
-      - name: Create plugins dir
-        run: |
-          cd ./OpenSearch-Dashboards
-          mkdir -p plugins
-      
-      - name: Checkout OpenSearch Dashboard Security plugin
-        uses: actions/checkout@v2
-        with:
-          path: OpenSearch-Dashboards/plugins/security-dashboards-plugin
-          ref: ${{ github.ref }}
 
-      - name: Check OpenSearch Running
-        continue-on-error: true
-        run: curl -XGET https://localhost:9200 -u 'admin:admin' -k
+      # Not sure if this will need a separate path for Windows
+      - name: Download OpenSearch Security
+          wget 'https://ci.opensearch.org/ci/dbc/distribution-build-opensearch/${{ env.OPENSEARCH_VERSION }}/latest/linux/x64/tar/builds/opensearch/plugins/${{ env.PLUGIN_NAME }}-${{ env.PLUGIN_VERSION }}.zip' --retry-connrefused --tries=3 --no-dns-cache --progress=bar:force:noscroll --verbose
 
-      - name: Get node and yarn versions
-        id: versions
-        run: |
-          echo "::set-output name=node_version::$(cat ./OpenSearch-Dashboards/.node-version)"
-          echo "::set-output name=yarn_version::$(jq -r '.engines.yarn' ./OpenSearch-Dashboards/package.json)"
-      
-      - name: Setup node
-        uses: actions/setup-node@v1
+      - name: Set up JDK
+        uses: actions/setup-java@v1
         with:
-          node-version: ${{ steps.versions.outputs.node_version }}
-          registry-url: 'https://registry.npmjs.org'
-      
-      - name: Install correct yarn version for OpenSearch Dashboards
-        run: |
-          npm uninstall -g yarn
-          echo "Installing yarn ${{ steps.versions_step.outputs.yarn_version }}"
-          npm i -g yarn@${{ steps.versions.outputs.yarn_version }}
-      
-      - name: Check OpenSearch Running
-        continue-on-error: true
-        run: curl -XGET https://localhost:9200 -u 'admin:admin' -k
+          java-version: ${{ matrix.jdk }}
 
-      - name: Bootstrap OpenSearch Dashboards
+      - name: Rename OpenSearch Security Plugin
+        run: mv ${{ env.PLUGIN_NAME }}-${{ env.PLUGIN_VERSION }}.zip ${{ env.PLUGIN_NAME }}.zip
+
+      - name: Create Setup Script
+        if: ${{ runner.os == 'Linux' }}
+        run: |
+          cat > setup.sh <<'EOF'
+          chmod +x  ./opensearch-${{ env.OPENSEARCH_VERSION }}-SNAPSHOT/plugins/${{ env.PLUGIN_NAME }}/tools/install_demo_configuration.sh 
+          /bin/bash -c "./opensearch-${{ env.OPENSEARCH_VERSION }}-SNAPSHOT/plugins/${{ env.PLUGIN_NAME }}/tools/install_demo_configuration.sh -y"
+          EOF
+
+      - name: Create Setup Script
+        if: ${{ runner.os == 'Windows' }}
+        run: |
+          New-Item .\setup.bat -type file
+          Set-Content .\setup.bat -Value "powershell.exe .\opensearch-${{ env.OPENSEARCH_VERSION }}-SNAPSHOT\plugins\${{ env.PLUGIN_NAME }}\tools\install_demo_configuration.bat -y"
+          Get-Content .\setup.bat
+
+      - name: Run Opensearch with A Single Plugin
+        uses: scrawfor99/security/.github/actions/start-opensearch-with-one-plugin@modify-for-dash-config
+        with:
+          opensearch-version: ${{ env.OPENSEARCH_VERSION }}
+          plugin-name: ${{ env.PLUGIN_NAME }}
+          setup-script-name: setup
+
+      - name: Run Dashboard with Security Dashboards Plugin
+        uses: ./.github/actions/install-dashboards
+        with:
+          plugin_name: security-dashboards-plugin
+
+      - name: Configure and Run OpenSearch Dashboards on Linux
         continue-on-error: false
+        if: ${{ runner.os == 'Linux' }}
         run: |
           cd ./OpenSearch-Dashboards
-          yarn osd bootstrap
           echo 'server.host: "0.0.0.0"' >> ./config/opensearch_dashboards.yml
           echo 'opensearch.hosts: ["https://localhost:9200"]' >> ./config/opensearch_dashboards.yml
           echo 'opensearch.ssl.verificationMode: none' >> ./config/opensearch_dashboards.yml
@@ -112,18 +85,36 @@ jobs:
           yarn start --no-base-path --no-watch &
           sleep 300
 
+      - name: Configure and Run OpenSearch Dashboards on Windows
+        continue-on-error: false
+        if: ${{ runner.os == 'Windows' }}
+        run: |
+          cd .\OpenSearch-Dashboards
+          Add-Content .\config\opensearch_dashboards.yml "server.host: `"0.0.0.0`""
+          Add-Content .\config\opensearch_dashboards.yml "opensearch.hosts: [`"https://localhost:9200`"]"
+          Add-Content .\config\opensearch_dashboards.yml "opensearch.ssl.verificationMode: none"
+          Add-Content .\config\opensearch_dashboards.yml "opensearch.username: `"kibanaserver`""
+          Add-Content .\config\opensearch_dashboards.yml "opensearch.password: `"kibanaserver`""
+          Add-Content .\config\opensearch_dashboards.yml "opensearch.requestHeadersWhitelist: [ authorization,securitytenant ]"
+          Add-Content .\config\opensearch_dashboards.yml "opensearch_security.multitenancy.enabled: true"
+          Add-Content .\config\opensearch_dashboards.yml "opensearch_security.multitenancy.tenants.preferred: [`"Private`", `"Global`"]"
+          Add-Content .\config\opensearch_dashboards.yml "opensearch_security.readonly_mode.roles: [`"kibana_read_only`"]"
+          Add-Content .\config\opensearch_dashboards.yml "opensearch_security.cookie.secure: false"
+          Add-Content .\config\opensearch_dashboards.yml "opensearch_security.multitenancy.enable_aggregation_view: true"
+          yarn start --no-base-path --no-watch &
+          sleep 300
+
       - name: Checkout
         uses: actions/checkout@v2
         with:
           path: ${{ env.FTR_PATH }}
           repository: opensearch-project/opensearch-dashboards-functional-test
-          ref: '2.x'
+          ref: 'main'
 
       - name: Get Cypress version
         id: cypress_version
-        run: |
-          echo "::set-output name=cypress_version::$(cat ./${{ env.FTR_PATH }}/package.json | jq '.devDependencies.cypress' | tr -d '"')"
-      
+        run: echo "::set-output name=cypress_version::$(cat ./${{ env.FTR_PATH }}/package.json | jq '.devDependencies.cypress' | tr -d '"')"
+
       - name: Run tests
         uses: cypress-io/github-action@v2
         with:
