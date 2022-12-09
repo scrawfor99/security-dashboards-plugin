@@ -41,22 +41,6 @@ jobs:
         with:
           java-version: ${{ matrix.jdk }}
 
-      # Download OpenSearch Security
-      - name: Download OpenSearch Security for Windows
-        uses: peternied/download-file@v2
-        if: ${{ runner.os == 'Windows' }}
-        with:
-          url: https://ci.opensearch.org/ci/dbc/distribution-build-opensearch/${{ env.OPENSEARCH_VERSION }}/latest/windows/x64/zip/builds/opensearch/plugins/${{ env.PLUGIN_NAME }}-${{ env.PLUGIN_VERSION }}.zip
-
-      - name: Download OpenSearch Security for Linux
-        uses: peternied/download-file@v2
-        if: ${{ runner.os == 'Linux' }}
-        with:
-          url: https://ci.opensearch.org/ci/dbc/distribution-build-opensearch/${{ env.OPENSEARCH_VERSION }}/latest/linux/x64/tar/builds/opensearch/plugins/${{ env.PLUGIN_NAME }}-${{ env.PLUGIN_VERSION }}.zip
-
-      - name: Rename Plugin File
-        run: mv ${{ env.PLUGIN_NAME }}-${{ env.PLUGIN_VERSION }}.zip ${{ env.PLUGIN_NAME }}.zip
-
       - name: Create Setup Script for Linux
         if: ${{ runner.os == 'Linux' }}
         run: |
@@ -69,7 +53,7 @@ jobs:
         if: ${{ runner.os == 'Windows' }}
         run: |
           New-Item .\setup.bat -type file
-          Set-Content .\setup.bat -Value "powershell.exe Start-Process -FilePath `".\opensearch-${{ env.OPENSEARCH_VERSION }}-SNAPSHOT\plugins\${{ env.PLUGIN_NAME }}\tools\install_demo_configuration.bat`" -ArgumentList `"y`""
+          Set-Content .\setup.bat -Value "powershell.exe .\opensearch-${{ env.OPENSEARCH_VERSION }}-SNAPSHOT\plugins\${{ env.PLUGIN_NAME }}\tools\install_demo_configuration.bat -y"
           Get-Content .\setup.bat
 
       - name: Run Opensearch with A Single Plugin

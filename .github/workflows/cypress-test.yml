@@ -1,6 +1,6 @@
 name: Cypress Tests
 
-on: [push, pull_request]
+on: [] #push, pull_request
 
 env:
   TEST_BROWSER_HEADLESS: 1
@@ -29,7 +29,7 @@ jobs:
 
       # Not sure if this will need a separate path for Windows
       - name: Download OpenSearch Security
-          wget 'https://ci.opensearch.org/ci/dbc/distribution-build-opensearch/${{ env.OPENSEARCH_VERSION }}/latest/linux/x64/tar/builds/opensearch/plugins/${{ env.PLUGIN_NAME }}-${{ env.PLUGIN_VERSION }}.zip' --retry-connrefused --tries=3 --no-dns-cache --progress=bar:force:noscroll --verbose
+        uses: wget 'https://ci.opensearch.org/ci/dbc/distribution-build-opensearch/${{ env.OPENSEARCH_VERSION }}/latest/linux/x64/tar/builds/opensearch/plugins/${{ env.PLUGIN_NAME }}-${{ env.PLUGIN_VERSION }}.zip' --retry-connrefused --tries=3 --no-dns-cache --progress=bar:force:noscroll --verbose
 
       - name: Set up JDK
         uses: actions/setup-java@v1
