@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest ]
+        os: [windows-latest ]
         jdk: [11]
     runs-on: ${{ matrix.os }}
 
@@ -27,10 +27,9 @@ jobs:
       - name: Checkout Branch
         uses: actions/checkout@v2
 
+      # Not sure if this will need a separate path for Windows
       - name: Download OpenSearch Security
-        uses: peternied/download-file@v2
-        with:
-          url: https://ci.opensearch.org/ci/dbc/distribution-build-opensearch/${{ env.OPENSEARCH_VERSION }}/latest/linux/x64/tar/builds/opensearch/plugins/${{ env.PLUGIN_NAME }}-${{ env.PLUGIN_VERSION }}.zip
+          wget 'https://ci.opensearch.org/ci/dbc/distribution-build-opensearch/${{ env.OPENSEARCH_VERSION }}/latest/linux/x64/tar/builds/opensearch/plugins/${{ env.PLUGIN_NAME }}-${{ env.PLUGIN_VERSION }}.zip' --retry-connrefused --tries=3 --no-dns-cache --progress=bar:force:noscroll --verbose
 
       - name: Rename OpenSearch Security Plugin
         run: mv ${{ env.PLUGIN_NAME }}-${{ env.PLUGIN_VERSION }}.zip ${{ env.PLUGIN_NAME }}.zip
