@@ -34,37 +34,28 @@ jobs:
           browser: firefox
           version: latest
 
-      - name: Download OpenSearch Security Plugin on Linux
-        if: ${{ runner.os == 'Linux' }}
-        run: wget --progress=bar:force:noscroll -O opensearch-security.zip https://ci.opensearch.org/ci/dbc/distribution-build-opensearch/${{ env.OPENSEARCH_VERSION }}/latest/linux/x64/tar/builds/opensearch/plugins/${{ env.PLUGIN_NAME }}-${{ env.PLUGIN_VERSION }}.zip
-
-      - name: Download OpenSearch Security Plugin on Windows
-        if: ${{ runner.os == 'Windows' }}
-        run: Invoke-WebRequest -URI https://ci.opensearch.org/ci/dbc/distribution-build-opensearch/${{ env.OPENSEARCH_VERSION }}/latest/linux/x64/tar/builds/opensearch/plugins/${{ env.PLUGIN_NAME }}-${{ env.PLUGIN_VERSION }}.zip -OutFile opensearch-security.zip
-
-      - name: Download OpenSearch Security for Windows
+      - name: Download OpenSearch Security
         uses: peternied/download-file@v2
-        if: ${{ runner.os == 'Windows' }}
         with:
-          url: https://ci.opensearch.org/ci/dbc/distribution-build-opensearch/${{ env.OPENSEARCH_VERSION }}/latest/windows/x64/tar/builds/opensearch/plugins/${{ env.PLUGIN_NAME }}-${{ env.PLUGIN_VERSION }}.zip
+          url:  https://ci.opensearch.org/ci/dbc/distribution-build-opensearch/${{ env.OPENSEARCH_VERSION }}/latest/linux/x64/tar/builds/opensearch/plugins/${{ env.PLUGIN_NAME }}-${{ env.PLUGIN_VERSION }}.zip
+
+      - name: Rename Security Plugin
+        run: mv ${{ env.PLUGIN_NAME }}-${{ env.PLUGIN_VERSION }}.zip opensearch-security.zip
 
       - name: Create Setup Script for Linux
         if: ${{ runner.os == 'Linux' }}
         run: |
           cat > setup.sh <<'EOF'
           chmod +x  ./opensearch-${{ env.OPENSEARCH_VERSION }}-SNAPSHOT/plugins/${{ env.PLUGIN_NAME }}/tools/install_demo_configuration.sh 
-          /bin/bash -c "yes | ./opensearch-${{ env.OPENSEARCH_VERSION }}-SNAPSHOT/plugins/${{ env.PLUGIN_NAME }}/tools/install_demo_configuration.sh"
-          echo "plugins.security.unsupported.restapi.allow_securityconfig_modification: true" >> ./opensearch-${{ env.OPENSEARCH_VERSION }}-SNAPSHOT/config/opensearch.yml
+          /bin/bash -c "./opensearch-${{ env.OPENSEARCH_VERSION }}-SNAPSHOT/plugins/${{ env.PLUGIN_NAME }}/tools/install_demo_configuration.sh -y"
           EOF
 
       - name: Create Setup Script for Windows
         if: ${{ runner.os == 'Windows' }}
         run: |
           New-Item .\setup.bat -type file
-          Set-Content .\setup.bat -Value "powershell.exe -noexit -command `"echo 'y' | .\opensearch-${{ env.OPENSEARCH_VERSION }}-SNAPSHOT\plugins\${{ env.PLUGIN_NAME }}\tools\install_demo_configuration.bat`""
+          Set-Content .\setup.bat -Value "powershell.exe .\opensearch-${{ env.OPENSEARCH_VERSION }}-SNAPSHOT\plugins\${{ env.PLUGIN_NAME }}\tools\install_demo_configuration.bat -y"
           Get-Content .\setup.bat
-
-      #TODO: Translate ln:53 to pwsh command and add to Windows Setup ^
 
       - name: Run Opensearch with A Single Plugin
         uses: opensearch-project/security/.github/actions/start-opensearch-with-one-plugin@main
