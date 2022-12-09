@@ -31,6 +31,11 @@ jobs:
       - name: Download OpenSearch Security
           wget 'https://ci.opensearch.org/ci/dbc/distribution-build-opensearch/${{ env.OPENSEARCH_VERSION }}/latest/linux/x64/tar/builds/opensearch/plugins/${{ env.PLUGIN_NAME }}-${{ env.PLUGIN_VERSION }}.zip' --retry-connrefused --tries=3 --no-dns-cache --progress=bar:force:noscroll --verbose
 
+      - name: Set up JDK
+        uses: actions/setup-java@v1
+        with:
+          java-version: ${{ matrix.jdk }}
+
       - name: Rename OpenSearch Security Plugin
         run: mv ${{ env.PLUGIN_NAME }}-${{ env.PLUGIN_VERSION }}.zip ${{ env.PLUGIN_NAME }}.zip
 
