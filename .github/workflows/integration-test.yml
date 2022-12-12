@@ -17,7 +17,6 @@ jobs:
       matrix:
         #os: [ ubuntu-latest , windows-latest ]
         os: [ windows-latest ]
-        #os: [ ubuntu-latest ]
         jdk: [11]
     runs-on: ${{ matrix.os }}
 
@@ -73,7 +72,7 @@ jobs:
           Get-Content .\setup.bat
 
       - name: Run Opensearch with A Single Plugin
-        uses: scrawfor99/security/.github/actions/start-opensearch-with-one-plugin@modify-for-dash-config
+        uses: opensearch-project/security/.github/actions/start-opensearch-with-one-plugin@main
         with:
           opensearch-version: ${{ env.OPENSEARCH_VERSION }}
           plugin-name: ${{ env.PLUGIN_NAME }}
