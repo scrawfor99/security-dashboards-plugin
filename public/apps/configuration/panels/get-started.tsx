@@ -134,7 +134,7 @@ const setOfSteps = [
               data-test-subj="map-users-to-role"
               fill
               onClick={() => {
-                window.location.href = buildHashUrl(ResourceType.users);
+                window.location.href = buildHashUrl(ResourceType.roles);
               }}
             >
               Map users to a role
