@@ -240,9 +240,6 @@ export function LoginPage(props: LoginPageDeps) {
           break;
         }
         case AuthType.PROXY: {
-          // formBody.pop();
-          // formBody.pop();
-          // formBody.pop();
           break;
         }
         default: {
