@@ -219,10 +219,11 @@ export function LoginPage(props: LoginPageDeps) {
                 renderLoginButton(AuthType.ANONYMOUS, ANONYMOUS_AUTH_LOGIN, anonymousConfig)
               );
             }
-
-            formBody.push(<EuiSpacer size="xs" />);
-            formBody.push(<EuiHorizontalRule size="full" margin="xl" />);
-            formBody.push(<EuiSpacer size="xs" />);
+            if (!authOpts.includes(AuthType.PROXY) || authOpts.length !== 2) {
+              formBody.push(<EuiSpacer size="xs" />);
+              formBody.push(<EuiHorizontalRule size="full" margin="xl" />);
+              formBody.push(<EuiSpacer size="xs" />);
+            }
           }
           break;
         }
@@ -236,6 +237,12 @@ export function LoginPage(props: LoginPageDeps) {
           const nextUrl = extractNextUrlFromWindowLocation();
           const samlAuthLoginUrl = SAML_AUTH_LOGIN_WITH_FRAGMENT + nextUrl;
           formBodyOp.push(renderLoginButton(AuthType.SAML, samlAuthLoginUrl, samlConfig));
+          break;
+        }
+        case AuthType.PROXY: {
+          // formBody.pop();
+          // formBody.pop();
+          // formBody.pop();
           break;
         }
         default: {
